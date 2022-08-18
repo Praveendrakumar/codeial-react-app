@@ -1,38 +1,73 @@
-import React  from 'react';
-import { useEffect, useState } from 'react';
-import { getPosts } from '../api';
-import { Home } from '../pages';
+import {
+  BrowserRouter as Router,
+  Route,
+  Switch,
+  Redirect,
+} from 'react-router-dom';
+
+import { useAuth } from '../hooks';
+import { Home, Login, Signup, Settings, UserProfile } from '../pages';
 import { Loader, Navbar } from './';
 
+function PrivateRoute({ children, ...rest }) {
+  const auth = useAuth();
+
+  return (
+    <Route
+      {...rest}
+      render={() => {
+        if (auth.user) {
+          return children;
+        }
+
+        return <Redirect to="/login" />;
+      }}
+    />
+  );
+}
+
+const Page404 = () => {
+  return <h1>404</h1>;
+};
+
 function App() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const auth = useAuth();
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      const response = await getPosts();
-
-      if (response.success) {
-        setPosts(response.data.posts);
-      }
-
-      setLoading(false);
-    };
-
-    fetchPosts();
-  }, []);
-
-  if (loading) {
-    return( 
-      <div>
-      <Loader />
-      </div>);
+  console.log('auth', auth);
+  if (auth.loading) {
+    return <Loader />;
   }
 
   return (
     <div className="App">
-      <Navbar />
-      <Home posts={posts} />
+      <Router>
+        <Navbar />
+        <Switch>
+          <Route exact path="/">
+            <Home />
+          </Route>
+
+          <Route exact path="/login">
+            <Login />
+          </Route>
+
+          <Route exact path="/register">
+            <Signup />
+          </Route>
+
+          <PrivateRoute exact path="/settings">
+            <Settings />
+          </PrivateRoute>
+
+          <PrivateRoute exact path="/user/:userId">
+            <UserProfile />
+          </PrivateRoute>
+
+          <Route>
+            <Page404 />
+          </Route>
+        </Switch>
+      </Router>
     </div>
   );
 }
